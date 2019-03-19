@@ -1,17 +1,13 @@
 ﻿using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using StudentExercisesAPI.Models;
 using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
-using System.Linq;
 using Microsoft.AspNetCore.Http;
-using Dapper;
 using System;
 
-namespace StudentExercisesAPI.Controllers
-{
+namespace StudentExercisesAPI.Controllers {
 
     [Route("api/cohorts")]
     [ApiController]
@@ -25,9 +21,10 @@ namespace StudentExercisesAPI.Controllers
             _config = config;
         }
 
-        public IDbConnection Connection {
+        public SqlConnection Connection {
 
             get {
+
                 return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             }
 
@@ -37,12 +34,27 @@ namespace StudentExercisesAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> Get() {
 
-            using (IDbConnection conn = Connection) {
+            using (SqlConnection conn = Connection) {
 
-                string sql = "SELECT * FROM Cohort";
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                IEnumerable<Cohort> cohorts = await conn.QueryAsync<Cohort>(sql);
-                return Ok(cohorts);
+                    cmd.CommandText = "SELECT id, CohortName FROM Cohort";
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    List<Cohort> cohorts = new List<Cohort>();
+
+                    while (reader.Read()) {
+
+                        Cohort cohort = new Cohort(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("CohortName")));
+
+                        cohorts.Add(cohort);
+                    }
+
+                    reader.Close();
+
+                    return Ok(cohorts);
+                }
             }
         }
 
@@ -50,12 +62,27 @@ namespace StudentExercisesAPI.Controllers
         [HttpGet("{id}", Name = "GetCohort")]
         public async Task<IActionResult> Get([FromRoute] int id) {
 
-            using (IDbConnection conn = Connection) {
+            using (SqlConnection conn = Connection) {
 
-                string sql = $"SELECT * FROM Cohort WHERE Id = {id}";
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                var singleCohort = (await conn.QueryAsync<Cohort>(sql)).Single();
-                return Ok(singleCohort);
+                    cmd.CommandText = "SELECT id, CohortName FROM Cohort WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Cohort cohort = null;
+
+                    while (reader.Read()) {
+
+                        cohort = new Cohort(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("CohortName")));
+                    }
+
+                    reader.Close();
+
+                    return Ok(cohort);
+                }
             }
         }
 
@@ -64,46 +91,61 @@ namespace StudentExercisesAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Cohort cohort) {
 
-            string sql = $@"INSERT INTO Cohort (CohortName)
-                                 VALUES ('{cohort.CohortName}');
-                                 SELECT MAX(Id) FROM Cohort";
+            using (SqlConnection conn = Connection) {
+               
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-            using (IDbConnection conn = Connection) {
+                    cmd.CommandText = $@"INSERT INTO Cohort (CohortName)
+                                         OUTPUT INSERTED.Id
+                                         VALUES (@cohortName) 
+                                         SELECT MAX(Id) FROM Cohort";
+                    cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
 
-                var newId = (await conn.QueryAsync<int>(sql)).Single();
-                cohort.Id = newId;
-                return CreatedAtRoute("GetCohort", new { id = newId }, cohort);
+                    int newId = (int) cmd.ExecuteScalar();
+                    cohort.Id = newId;
+
+                    return CreatedAtRoute("GetCohort", new { id = newId }, cohort);
+                }
             }
-
         }
 
         // PUT api/cohorts/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Cohort cohort) {
-            string sql = $@"UPDATE Exercise
-                               SET CohortName ='{cohort.CohortName}'
-                             WHERE Id = {id}";
 
             try {
 
-                using (IDbConnection conn = Connection) {
-                    int rowsAffected = await conn.ExecuteAsync(sql);
-                    if (rowsAffected > 0) {
-                        return new StatusCodeResult(StatusCodes.Status204NoContent);
+                using (SqlConnection conn = Connection) {
+
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        cmd.CommandText = @"UPDATE Coffee
+                                               SET CohortName = @cohortName,
+                                             WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0) {
+
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+                        throw new Exception("No rows affected");
                     }
-                    throw new Exception("No rows affected");
                 }
             }
+
             catch (Exception) {
 
                 if (!CohortExists(id)) {
 
                     return NotFound();
-
-                } else {
-
-                    throw;
                 }
+
+                throw;
             }
         }
 
@@ -111,27 +153,52 @@ namespace StudentExercisesAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id) {
 
-            string sql = $@"DELETE FROM Cohort WHERE Id = {id}";
+            try {
+                using (SqlConnection conn = Connection) {
 
-            using (IDbConnection conn = Connection) {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
 
-                int rowsAffected = await conn.ExecuteAsync(sql);
+                        cmd.CommandText = $@"DELETE FROM Cohort WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
 
-                if (rowsAffected > 0) {
-                    return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0) {
+
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+
+                        throw new Exception("No rows affected");
+                    }
                 }
-
-                throw new Exception("No rows affected");
             }
 
+            catch (Exception) {
+
+                if (!CohortExists(id)) {
+
+                    return NotFound();
+
+                }
+
+                throw;
+            }
         }
 
         private bool CohortExists(int id) {
 
-            string sql = $"SELECT Id, CohortName FROM Cohort WHERE Id = {id}";
-            using (IDbConnection conn = Connection) {
+            using (SqlConnection conn = Connection) {
 
-                return conn.Query<Cohort>(sql).Count() > 0;
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
+
+                    cmd.CommandText = $@"SELECT Id, CohortName FROM Cohort WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
             }
         }
     }

@@ -1,17 +1,13 @@
 ﻿using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using StudentExercisesAPI.Models;
 using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
-using System.Linq;
 using Microsoft.AspNetCore.Http;
-using Dapper;
 using System;
 
-namespace StudentExercisesAPI.Controllers
-{
+namespace StudentExercisesAPI.Controllers {
 
     [Route("api/instructors")]
     [ApiController]
@@ -25,7 +21,7 @@ namespace StudentExercisesAPI.Controllers
             _config = config;
         }
 
-        public IDbConnection Connection {
+        public SqlConnection Connection {
 
             get {
                 return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
@@ -37,12 +33,32 @@ namespace StudentExercisesAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> Get() {
 
-            using (IDbConnection conn = Connection) {
+            using (SqlConnection conn = Connection) {
 
-                string sql = "SELECT * FROM Instructor";
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                IEnumerable<Instructor> instructors = await conn.QueryAsync<Instructor>(sql);
-                return Ok(instructors);
+                    cmd.CommandText = "SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Instructor";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    List<Instructor> instructors = new List<Instructor>();
+
+                    while (reader.Read()) {
+
+                        Instructor instructor = new Instructor(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("FirstName")),
+                            reader.GetString(reader.GetOrdinal("LastName")),
+                            reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            reader.GetInt32(reader.GetOrdinal("CohortId")));
+
+                        instructors.Add(instructor);
+                    }
+
+                    reader.Close();
+
+                    return Ok(instructors);
+                }
             }
         }
 
@@ -50,12 +66,30 @@ namespace StudentExercisesAPI.Controllers
         [HttpGet("{id}", Name = "GetInstructor")]
         public async Task<IActionResult> Get([FromRoute] int id) {
 
-            using (IDbConnection conn = Connection) {
+            using (SqlConnection conn = Connection) {
 
-                string sql = $"SELECT * FROM Instructor WHERE Id = {id}";
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                var singleInstructor = (await conn.QueryAsync<Instructor>(sql)).Single();
-                return Ok(singleInstructor);
+                    cmd.CommandText = "SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Instructor WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Instructor instructor = null;
+
+                    while (reader.Read()) {
+
+                        instructor = new Instructor(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("FirstName")),
+                            reader.GetString(reader.GetOrdinal("LastName")),
+                            reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            reader.GetInt32(reader.GetOrdinal("CohortId")));
+                    }
+
+                    reader.Close();
+
+                    return Ok(instructor);
+                }
             }
         }
 
@@ -64,48 +98,68 @@ namespace StudentExercisesAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Instructor instructor) {
 
-            string sql = $@"INSERT INTO Instructor (FirstName, LastName, SlackHandle, CohortId)
-                                 VALUES ('{instructor.FirstName}', '{instructor.LastName}', 
-                                         '{instructor.SlackHandle}', '{instructor.CohortId}');
-                                 SELECT MAX(Id) FROM Instructor";
+            using (SqlConnection conn = Connection) {
 
-            using (IDbConnection conn = Connection) {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                var newId = (await conn.QueryAsync<int>(sql)).Single();
-                instructor.Id = newId;
-                return CreatedAtRoute("GetInstructor", new { id = newId }, instructor);
+                    cmd.CommandText = $@"INSERT INTO Instructor (FirstName, LastName, SlackHandle, CohortId) 
+                                         OUTPUT INSERTED.Id
+                                         VALUES (@firstName, @lastName, @slackHandle, @cohortId);
+                                         SELECT MAX(Id) FROM Instructor";
+
+                    cmd.Parameters.Add(new SqlParameter("@firstName", instructor.FirstName));
+                    cmd.Parameters.Add(new SqlParameter("@lastName", instructor.LastName));
+                    cmd.Parameters.Add(new SqlParameter("@slackHandle", instructor.SlackHandle));
+                    cmd.Parameters.Add(new SqlParameter("@cohortId", instructor.CohortId));
+
+                    int newId = (int)cmd.ExecuteScalar();
+                    instructor.Id = newId;
+                    return CreatedAtRoute("GetExercise", new { id = newId }, instructor);
+                }
             }
-
         }
 
         // PUT api/instructors/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Instructor instructor) {
-            string sql = $@"UPDATE Instructor
-                               SET FirstName = '{instructor.FirstName}', LastName = '{instructor.LastName}',
-                                   SlackHandle = '{instructor.SlackHandle}', CohortId = '{instructor.CohortId}'
-                             WHERE Id = {id}";
 
             try {
 
-                using (IDbConnection conn = Connection) {
-                    int rowsAffected = await conn.ExecuteAsync(sql);
-                    if (rowsAffected > 0) {
-                        return new StatusCodeResult(StatusCodes.Status204NoContent);
+                using (SqlConnection conn = Connection) {
+
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        cmd.CommandText = $@"UPDATE Instructor
+                                                SET FirstName = @firstName, LastName = @lastName, SlackHandle = @slackHandle, CohortId = @cohortId
+                                              WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@firstName", instructor.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", instructor.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", instructor.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", instructor.CohortId));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0) {
+
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+
+                        throw new Exception("No rows affected");
                     }
-                    throw new Exception("No rows affected");
                 }
             }
+
             catch (Exception) {
 
                 if (!InstructorExists(id)) {
 
                     return NotFound();
-
-                } else {
-
-                    throw;
                 }
+
+                throw;
             }
         }
 
@@ -113,27 +167,53 @@ namespace StudentExercisesAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id) {
 
-            string sql = $@"DELETE FROM Instructor WHERE Id = {id}";
+            try {
 
-            using (IDbConnection conn = Connection) {
+                using (SqlConnection conn = Connection) {
 
-                int rowsAffected = await conn.ExecuteAsync(sql);
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
 
-                if (rowsAffected > 0) {
-                    return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        cmd.CommandText = $@"DELETE FROM Instructor WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0) {
+
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+
+                        throw new Exception("No rows affected");
+                    }
                 }
-
-                throw new Exception("No rows affected");
             }
 
+            catch (Exception) {
+
+                if (!InstructorExists(id)) {
+
+                    return NotFound();
+
+                }
+
+                throw;
+            }
         }
 
         private bool InstructorExists(int id) {
 
-            string sql = $"SELECT Id, FirstName, LastName, SlackHandle, CohortId FROM Instructor WHERE Id = {id}";
-            using (IDbConnection conn = Connection) {
+            using (SqlConnection conn = Connection) {
 
-                return conn.Query<Instructor>(sql).Count() > 0;
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
+
+                    cmd.CommandText = $@"SELECT Id, FirstName, LastName, SlackHandle, CohortId FROM Instructor WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
             }
         }
     }

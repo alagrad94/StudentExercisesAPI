@@ -1,37 +1,29 @@
 ﻿using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using StudentExercisesAPI.Models;
 using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
-using System.Linq;
 using Microsoft.AspNetCore.Http;
-using Dapper;
 using System;
 
-namespace StudentExercisesAPI.Controllers
-{
+namespace StudentExercisesAPI.Controllers {
 
     [Route("api/students")]
     [ApiController]
 
-    public class StudentsController : ControllerBase
-    {
+    public class StudentsController : ControllerBase {
 
         private readonly IConfiguration _config;
 
-        public StudentsController(IConfiguration config)
-        {
+        public StudentsController(IConfiguration config) {
 
             _config = config;
         }
 
-        public IDbConnection Connection
-        {
+        public SqlConnection Connection {
 
-            get
-            {
+            get {
                 return new SqlConnection(_config.GetConnectionString("DefaultConnection"));
             }
 
@@ -39,124 +31,189 @@ namespace StudentExercisesAPI.Controllers
 
         // GET api/students
         [HttpGet]
-        public async Task<IActionResult> Get()
-        {
+        public async Task<IActionResult> Get() {
 
-            using (IDbConnection conn = Connection)
-            {
+            using (SqlConnection conn = Connection) {
 
-                string sql = "SELECT * FROM Student";
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                IEnumerable<Student> students = await conn.QueryAsync<Student>(sql);
-                return Ok(students);
+                    cmd.CommandText = "SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Student";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    List<Student> students = new List<Student>();
+
+                    while (reader.Read()) {
+
+                        Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("FirstName")),
+                            reader.GetString(reader.GetOrdinal("LastName")),
+                            reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            reader.GetInt32(reader.GetOrdinal("CohortId")));
+
+                        students.Add(student);
+                    }
+
+                    reader.Close();
+
+                    return Ok(students);
+                }
             }
         }
 
         // GET api/students/5
         [HttpGet("{id}", Name = "GetStudent")]
-        public async Task<IActionResult> Get([FromRoute] int id)
-        {
+        public async Task<IActionResult> Get([FromRoute] int id) {
 
-            using (IDbConnection conn = Connection)
-            {
+            using (SqlConnection conn = Connection) {
 
-                string sql = $"SELECT * FROM Student WHERE Id = {id}";
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                var singleStudent = (await conn.QueryAsync<Student>(sql)).Single();
-                return Ok(singleStudent);
+                    cmd.CommandText = "SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Student WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Student student = null;
+
+                    while (reader.Read()) {
+
+                        student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("FirstName")),
+                            reader.GetString(reader.GetOrdinal("LastName")),
+                            reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            reader.GetInt32(reader.GetOrdinal("CohortId")));
+                    }
+
+                    reader.Close();
+
+                    return Ok(student);
+                }
             }
         }
 
 
         // POST api/students
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Student student)
-        {
+        public async Task<IActionResult> Post([FromBody] Student student) {
 
-            string sql = $@"INSERT INTO Student (FirstName, LastName, SlackHandle, CohortId)
-                                 VALUES ('{student.FirstName}', '{student.LastName}', 
-                                         '{student.SlackHandle}', '{student.CohortId}');
-                                 SELECT MAX(Id) FROM Student";
+            using (SqlConnection conn = Connection) {
 
-            using (IDbConnection conn = Connection)
-            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
 
-                var newId = (await conn.QueryAsync<int>(sql)).Single();
-                student.Id = newId;
-                return CreatedAtRoute("GetStudent", new { id = newId }, student);
+                    cmd.CommandText = $@"INSERT INTO Student (FirstName, LastName, SlackHandle, CohortId) 
+                                         OUTPUT INSERTED.Id
+                                         VALUES (@firstName, @lastName, @slackHandle, @cohortId);
+                                         SELECT MAX(Id) FROM Student";
+
+                    cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
+                    cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
+                    cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
+                    cmd.Parameters.Add(new SqlParameter("@cohortId", student.CohortId));
+
+                    int newId = (int)cmd.ExecuteScalar();
+                    student.Id = newId;
+                    return CreatedAtRoute("GetExercise", new { id = newId }, student);
+                }
             }
-
         }
 
         // PUT api/students/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Student student)
-        {
-            string sql = $@"UPDATE Student
-                               SET FirstName = '{student.FirstName}', LastName = '{student.LastName}',
-                                   SlackHandle = '{student.SlackHandle}', CohortId = '{student.CohortId}'
-                             WHERE Id = {id}";
+        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Student student) {
 
-            try
-            {
+            try {
 
-                using (IDbConnection conn = Connection)
-                {
-                    int rowsAffected = await conn.ExecuteAsync(sql);
-                    if (rowsAffected > 0)
-                    {
-                        return new StatusCodeResult(StatusCodes.Status204NoContent);
+                using (SqlConnection conn = Connection) {
+
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        cmd.CommandText = $@"UPDATE Student
+                                                SET FirstName = @firstName, LastName = @lastName, SlackHandle = @slackHandle, CohortId = @cohortId
+                                              WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", student.CohortId));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0) {
+
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+
+                        throw new Exception("No rows affected");
                     }
-                    throw new Exception("No rows affected");
                 }
             }
-            catch (Exception)
-            {
 
-                if (!StudentExists(id))
-                {
+            catch (Exception) {
+
+                if (!StudentExists(id)) {
 
                     return NotFound();
-
                 }
-                else
-                {
 
-                    throw;
-                }
+                throw;
             }
         }
 
         // DELETE api/students/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete([FromRoute] int id)
-        {
+        public async Task<IActionResult> Delete([FromRoute] int id) {
 
-            string sql = $@"DELETE FROM Student WHERE Id = {id}";
+            try {
 
-            using (IDbConnection conn = Connection)
-            {
+                using (SqlConnection conn = Connection) {
 
-                int rowsAffected = await conn.ExecuteAsync(sql);
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
 
-                if (rowsAffected > 0)
-                {
-                    return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        cmd.CommandText = $@"DELETE FROM Student WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected > 0) {
+
+                            return new StatusCodeResult(StatusCodes.Status204NoContent);
+                        }
+
+                        throw new Exception("No rows affected");
+                    }
                 }
-
-                throw new Exception("No rows affected");
             }
 
+            catch (Exception) {
+
+                if (!StudentExists(id)) {
+
+                    return NotFound();
+
+                }
+
+                throw;
+            }
         }
 
-        private bool StudentExists(int id)
-        {
+        private bool StudentExists(int id) {
 
-            string sql = $"SELECT Id, FirstName, LastName, SlackHandle, CohortId FROM Student WHERE Id = {id}";
-            using (IDbConnection conn = Connection)
-            {
+            using (SqlConnection conn = Connection) {
 
-                return conn.Query<Student>(sql).Count() > 0;
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand()) {
+
+                    cmd.CommandText = $@"SELECT Id, FirstName, LastName, SlackHandle, CohortId FROM Student WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
             }
         }
     }
