@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 
 namespace StudentExercisesAPI.Controllers {
-
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     [Route("api/instructors")]
     [ApiController]
 
@@ -31,14 +31,21 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/instructors
         [HttpGet]
-        public async Task<IActionResult> Get() {
+        public async Task<IActionResult> Get(string firstName = "", string lastName = "", string slackHandle = "") {
+
+            string searchFN = (firstName == "") ? "%" : firstName;
+            string searchLN = (lastName == "") ? "%" : lastName;
+            string searchSH = (slackHandle == "") ? "%" : slackHandle;
 
             using (SqlConnection conn = Connection) {
 
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = "SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Instructor";
+                    cmd.CommandText = $@"SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Instructor
+                                          WHERE (FirstName LIKE '{searchFN}' AND LastName LIKE '{searchLN}' AND SlackHandle LIKE '{searchSH}')";
+
+                    //WHERE(FirstName LIKE '{searchFN}' AND LastName LIKE '{searchLN}' AND SlackHandle LIKE '{searchSH}')
 
                     SqlDataReader reader = cmd.ExecuteReader();
 

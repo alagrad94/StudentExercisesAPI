@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 
 namespace StudentExercisesAPI.Controllers {
-
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     [Route("api/cohorts")]
     [ApiController]
 
@@ -32,14 +32,17 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/cohorts
         [HttpGet]
-        public async Task<IActionResult> Get() {
+
+        public async Task<IActionResult> Get(string name = "") {
+
+            string searchName =  (name == "") ? "%" : name;
 
             using (SqlConnection conn = Connection) {
 
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = "SELECT id, CohortName FROM Cohort";
+                    cmd.CommandText = $"SELECT id, CohortName FROM Cohort WHERE CohortName LIKE '{searchName}'";
                     SqlDataReader reader = cmd.ExecuteReader();
                     List<Cohort> cohorts = new List<Cohort>();
 
@@ -154,6 +157,7 @@ namespace StudentExercisesAPI.Controllers {
         public async Task<IActionResult> Delete([FromRoute] int id) {
 
             try {
+
                 using (SqlConnection conn = Connection) {
 
                     conn.Open();

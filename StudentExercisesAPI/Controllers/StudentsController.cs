@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 
 namespace StudentExercisesAPI.Controllers {
-
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     [Route("api/students")]
     [ApiController]
 
@@ -31,33 +31,101 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/students
         [HttpGet]
-        public async Task<IActionResult> Get() {
+        public async Task<IActionResult> Get(string firstName = "", string lastName = "", string slackHandle = "", string include = "") {
 
-            using (SqlConnection conn = Connection) {
+            string searchFN = (firstName == "") ? "%" : firstName;
+            string searchLN = (lastName == "") ? "%" : lastName;
+            string searchSH = (slackHandle == "") ? "%" : slackHandle;
 
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand()) {
+            if (include != "exercise") {
 
-                    cmd.CommandText = "SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Student";
+                using (SqlConnection conn = Connection) {
 
-                    SqlDataReader reader = cmd.ExecuteReader();
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    List<Student> students = new List<Student>();
+                        cmd.CommandText = $@"SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Student
+                                              WHERE (FirstName LIKE '{searchFN}' AND LastName LIKE '{searchLN}' AND SlackHandle LIKE '{searchSH}')";
 
-                    while (reader.Read()) {
+                        SqlDataReader reader = cmd.ExecuteReader();
 
-                        Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
-                            reader.GetString(reader.GetOrdinal("FirstName")),
-                            reader.GetString(reader.GetOrdinal("LastName")),
-                            reader.GetString(reader.GetOrdinal("SlackHandle")),
-                            reader.GetInt32(reader.GetOrdinal("CohortId")));
+                        List<Student> students = new List<Student>();
 
-                        students.Add(student);
+                        while (reader.Read()) {
+
+                            Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
+                                reader.GetString(reader.GetOrdinal("FirstName")),
+                                reader.GetString(reader.GetOrdinal("LastName")),
+                                reader.GetString(reader.GetOrdinal("SlackHandle")),
+                                reader.GetInt32(reader.GetOrdinal("CohortId")));
+
+                            students.Add(student);
+                        }
+
+                        reader.Close();
+
+                        return Ok(students);
                     }
+                }
+            } else {
+           
+                List<Student> students = new List<Student>();
 
-                    reader.Close();
+                using (SqlConnection conn = Connection) {
 
-                    return Ok(students);
+                    conn.Open();
+
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        // String interpolation lets us inject the id passed into this method.
+                        cmd.CommandText = $@"SELECT id, FirstName, LastName, SlackHandle, CohortId FROM Student
+                                              WHERE (FirstName LIKE '{searchFN}' AND LastName LIKE '{searchLN}' AND SlackHandle LIKE '{searchSH}')";
+                        SqlDataReader reader = cmd.ExecuteReader();
+
+
+                        while (reader.Read()) {
+
+                            Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
+                                 reader.GetString(reader.GetOrdinal("FirstName")),
+                                 reader.GetString(reader.GetOrdinal("LastName")),
+                                 reader.GetString(reader.GetOrdinal("SlackHandle")),
+                                 reader.GetInt32(reader.GetOrdinal("CohortId")));
+
+                            students.Add(student);
+                        }
+
+                        reader.Close();
+                    }
+                }
+
+                using (SqlConnection conn2 = Connection) {
+
+                    conn2.Open();
+
+                    using (SqlCommand cmd = conn2.CreateCommand()) {
+
+                        foreach (Student student in students) {
+
+                            cmd.CommandText = $@"SELECT e.id, e.ExerciseName, e.ExerciseLanguage
+                                       FROM AssignedExercise ae JOIN Exercise e ON ae.ExerciseId = e.id
+                                       WHERE ae.StudentId = {student.Id}";
+
+                            SqlDataReader reader = cmd.ExecuteReader();
+
+                            while (reader.Read()) {
+
+                                Exercise exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
+                                    reader.GetString(reader.GetOrdinal("ExerciseName")),
+                                    reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
+
+                                student.AssignedExercises.Add(exercise);
+                            }
+
+                            reader.Close();
+                        }
+
+                        return Ok(students);
+                    }
                 }
             }
         }
