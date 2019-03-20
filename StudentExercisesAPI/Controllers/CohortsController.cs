@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Text.RegularExpressions;
 
 namespace StudentExercisesAPI.Controllers {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -94,23 +95,32 @@ namespace StudentExercisesAPI.Controllers {
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Cohort cohort) {
 
-            using (SqlConnection conn = Connection) {
-               
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand()) {
+            //Regex tested online and finds "day" or "evening" followed by 1-2 digit number.  
+            //Not tested in application because app currently has no Post functionality.
 
-                    cmd.CommandText = $@"INSERT INTO Cohort (CohortName)
+            if (Regex.IsMatch(cohort.CohortName, @"(\bday\b|\bevening\b)\s(\b\d{1,2}", RegexOptions.IgnoreCase)) {
+
+                using (SqlConnection conn = Connection) {
+
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        cmd.CommandText = $@"INSERT INTO Cohort (CohortName)
                                          OUTPUT INSERTED.Id
                                          VALUES (@cohortName) 
                                          SELECT MAX(Id) FROM Cohort";
-                    cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
+                        cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
 
-                    int newId = (int) cmd.ExecuteScalar();
-                    cohort.Id = newId;
+                        int newId = (int)cmd.ExecuteScalar();
+                        cohort.Id = newId;
 
-                    return CreatedAtRoute("GetCohort", new { id = newId }, cohort);
+                        return CreatedAtRoute("GetCohort", new { id = newId }, cohort);
+                    }
                 }
             }
+
+                throw new Exception("Cohort name should be in the format of [Day|Evening] [number]");
+
         }
 
         // PUT api/cohorts/5

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace StudentExercisesAPI.Models { 
 
@@ -23,8 +24,13 @@ namespace StudentExercisesAPI.Models {
     }
 
     public int Id { get; set; }
+
+    [Required]
     public string ExerciseName { get; set; }
+
+    [Required]
     public string ExerciseLanguage { get; set; }
+
     public List<Student> ExerciseStudents { get; set; }
 
     }
