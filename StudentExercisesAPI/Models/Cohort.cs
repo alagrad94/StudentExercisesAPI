@@ -6,6 +6,11 @@ namespace StudentExercisesAPI.Models {
 
     public class Cohort {
 
+        public Cohort() {
+
+            CohortName = null;
+        }
+
         public Cohort (int id, string cohortName) {
 
             Id = id;
@@ -14,7 +19,7 @@ namespace StudentExercisesAPI.Models {
             InstructorList = new List<Instructor>();
         }
 
-        public Cohort(string cohortName) {
+       public Cohort(string cohortName) {
 
             CohortName = cohortName;
             StudentList = new List<Student>();
@@ -25,6 +30,7 @@ namespace StudentExercisesAPI.Models {
 
         [Required]
         [StringLength(11, MinimumLength = 5)]
+        [RegularExpression(@"(\bday\b|\bDay\b|\bevening\b|\bEvening\b)\s(\b\d{1,2})")]
         public string CohortName { get; set; }
 
         public List<Student> StudentList { get; set; }

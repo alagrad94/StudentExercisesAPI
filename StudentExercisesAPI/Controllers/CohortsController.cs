@@ -98,12 +98,15 @@ namespace StudentExercisesAPI.Controllers {
             //Regex tested online and finds "day" or "evening" followed by 1-2 digit number.  
             //Not tested in application because app currently has no Post functionality.
 
-            if (Regex.IsMatch(cohort.CohortName, @"(\bday\b|\bevening\b)\s(\b\d{1,2}", RegexOptions.IgnoreCase)) {
+            try
+            {
 
-                using (SqlConnection conn = Connection) {
+                using (SqlConnection conn = Connection)
+                {
 
                     conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand()) {
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
 
                         cmd.CommandText = $@"INSERT INTO Cohort (CohortName)
                                          OUTPUT INSERTED.Id
@@ -118,8 +121,10 @@ namespace StudentExercisesAPI.Controllers {
                     }
                 }
             }
+            catch (Exception) {
 
                 throw new Exception("Cohort name should be in the format of [Day|Evening] [number]");
+            }
 
         }
 
