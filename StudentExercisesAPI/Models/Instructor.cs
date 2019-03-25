@@ -13,6 +13,7 @@ namespace StudentExercisesAPI.Models {
           LastName = lastName;
           SlackHandle = slackHandle;
           CohortId = cohortId;
+          Cohort = new Cohort();
         }
 
         public Instructor(string firstName, string lastName, string slackHandle, int cohortId) {
@@ -21,6 +22,7 @@ namespace StudentExercisesAPI.Models {
             LastName = lastName;
             SlackHandle = slackHandle;
             CohortId = cohortId;
+            Cohort = new Cohort();
         }
 
         public int Id { get; set; }

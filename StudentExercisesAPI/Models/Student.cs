@@ -13,6 +13,7 @@ namespace StudentExercisesAPI.Models {
            LastName = lastName;
            SlackHandle = slackHandle;
            CohortId = cohortId;
+           Cohort = new Cohort();
            AssignedExercises = new List<Exercise>();
         }
 
@@ -22,6 +23,7 @@ namespace StudentExercisesAPI.Models {
             LastName = lastName;
             SlackHandle = slackHandle;
             CohortId = cohortId;
+            Cohort = new Cohort();
             AssignedExercises = new List<Exercise>();
         }
 

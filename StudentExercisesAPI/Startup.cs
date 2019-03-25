@@ -20,7 +20,16 @@ namespace StudentExercisesAPI
         {
             //string connectionString = "Server=10.37.129.4\\\\SQLEXPRESS;Database=StudentExercises;User Id = russ;Password = russ;";
             //services.AddDbContext<StudentExercisesContext>(opt =>
-                //opt.UseSqlServer(connectionString));
+            //opt.UseSqlServer(connectionString));
+            services.AddCors(options => {
+
+                options.AddPolicy("AllowAllHeaders",
+                    builder => {
+                        builder.WithOrigins("*")
+                          .AllowAnyHeader();
+                    });
+            });
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
@@ -37,6 +46,7 @@ namespace StudentExercisesAPI
                 app.UseHsts();
             }
 
+            app.UseCors("AllowAllHeaders");
             app.UseHttpsRedirection();
             app.UseMvc();
         }

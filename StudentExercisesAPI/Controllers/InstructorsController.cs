@@ -37,6 +37,8 @@ namespace StudentExercisesAPI.Controllers {
             string searchLN = (lastName == "") ? "%" : lastName;
             string searchSH = (slackHandle == "") ? "%" : slackHandle;
 
+            List<Instructor> instructors = new List<Instructor>();
+
             using (SqlConnection conn = Connection) {
 
                 conn.Open();
@@ -48,8 +50,6 @@ namespace StudentExercisesAPI.Controllers {
                     //WHERE(FirstName LIKE '{searchFN}' AND LastName LIKE '{searchLN}' AND SlackHandle LIKE '{searchSH}')
 
                     SqlDataReader reader = cmd.ExecuteReader();
-
-                    List<Instructor> instructors = new List<Instructor>();
 
                     while (reader.Read()) {
 
@@ -63,6 +63,29 @@ namespace StudentExercisesAPI.Controllers {
                     }
 
                     reader.Close();
+                }
+            }
+
+            using (SqlConnection conn2 = Connection) {
+
+                conn2.Open();
+                using (SqlCommand cmd = conn2.CreateCommand()) {
+
+                    foreach (Instructor instructor in instructors) {
+
+                        cmd.CommandText = $@"SELECT id, CohortName FROM Cohort
+                                          WHERE id = {instructor.CohortId}";
+
+                        SqlDataReader reader = cmd.ExecuteReader();
+
+                        while (reader.Read()) {
+
+                            instructor.Cohort = new Cohort(reader.GetInt32(reader.GetOrdinal("id")),
+                            reader.GetString(reader.GetOrdinal("CohortName")));
+                        }
+
+                        reader.Close();
+                    }
 
                     return Ok(instructors);
                 }

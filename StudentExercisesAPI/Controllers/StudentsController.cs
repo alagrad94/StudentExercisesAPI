@@ -39,6 +39,8 @@ namespace StudentExercisesAPI.Controllers {
 
             if (include != "exercise") {
 
+                List<Student> students = new List<Student>();
+
                 using (SqlConnection conn = Connection) {
 
                     conn.Open();
@@ -49,7 +51,6 @@ namespace StudentExercisesAPI.Controllers {
 
                         SqlDataReader reader = cmd.ExecuteReader();
 
-                        List<Student> students = new List<Student>();
 
                         while (reader.Read()) {
 
@@ -64,9 +65,34 @@ namespace StudentExercisesAPI.Controllers {
 
                         reader.Close();
 
+                    }
+                }
+
+                using (SqlConnection conn2 = Connection) {
+
+                    conn2.Open();
+                    using (SqlCommand cmd = conn2.CreateCommand()) {
+
+                        foreach (Student student in students) {
+
+                            cmd.CommandText = $@"SELECT id, CohortName FROM Cohort
+                                          WHERE id = {student.CohortId}";
+
+                            SqlDataReader reader = cmd.ExecuteReader();
+
+                            while (reader.Read()) {
+
+                                student.Cohort = new Cohort(reader.GetInt32(reader.GetOrdinal("id")),
+                                reader.GetString(reader.GetOrdinal("CohortName")));
+                            }
+
+                            reader.Close();
+                        }
+
                         return Ok(students);
                     }
                 }
+
             } else {
            
                 List<Student> students = new List<Student>();
@@ -119,6 +145,30 @@ namespace StudentExercisesAPI.Controllers {
                                     reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
 
                                 student.AssignedExercises.Add(exercise);
+                            }
+
+                            reader.Close();
+                        }
+
+                    }
+                }
+
+                using (SqlConnection conn3 = Connection) {
+
+                    conn3.Open();
+                    using (SqlCommand cmd = conn3.CreateCommand()) {
+
+                        foreach (Student student in students) {
+
+                            cmd.CommandText = $@"SELECT id, CohortName FROM Cohort
+                                          WHERE id = {student.CohortId}";
+
+                            SqlDataReader reader = cmd.ExecuteReader();
+
+                            while (reader.Read()) {
+
+                                student.Cohort = new Cohort(reader.GetInt32(reader.GetOrdinal("id")),
+                                reader.GetString(reader.GetOrdinal("CohortName")));
                             }
 
                             reader.Close();
