@@ -8,10 +8,11 @@ using Microsoft.AspNetCore.Http;
 using System;
 
 namespace StudentExercisesAPI.Controllers {
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
     [Route("api/instructors")]
     [ApiController]
-
     public class InstructorsController: ControllerBase {
 
         private readonly IConfiguration _config;
@@ -85,7 +86,10 @@ namespace StudentExercisesAPI.Controllers {
                     cmd.CommandText = $@"SELECT i.id AS instId, i.FirstName, i.LastName, i.SlackHandle, i.CohortId, 
                                                 c.CohortName, c.id AS chrtId
                                            FROM Instructor i 
-                                           JOIN Cohort c ON i.CohortId = c.id";
+                                           JOIN Cohort c ON i.CohortId = c.id
+                                           WHERE i.Id = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
 
                     SqlDataReader reader = cmd.ExecuteReader();
 

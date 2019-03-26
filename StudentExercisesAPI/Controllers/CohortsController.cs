@@ -7,12 +7,12 @@ using System.Data.SqlClient;
 using Microsoft.AspNetCore.Http;
 using System;
 
-namespace StudentExercisesAPI.Controllers
-{
+namespace StudentExercisesAPI.Controllers {
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
     [Route("api/cohorts")]
     [ApiController]
-
     public class CohortsController: ControllerBase {
 
         private readonly IConfiguration _config;
