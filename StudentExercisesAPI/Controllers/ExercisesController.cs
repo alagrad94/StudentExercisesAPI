@@ -46,8 +46,9 @@ namespace StudentExercisesAPI.Controllers {
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
 
-                        cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage FROM Exercise 
-                                                  WHERE (ExerciseLanguage LIKE '{searchLang}' AND ExerciseName LIKE '{searchName}')";
+                        cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
+                                               FROM Exercise 
+                                              WHERE (ExerciseLanguage LIKE '{searchLang}' AND ExerciseName LIKE '{searchName}')";
 
                         SqlDataReader reader = cmd.ExecuteReader();
 
@@ -77,8 +78,9 @@ namespace StudentExercisesAPI.Controllers {
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand()) {
 
-                        cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage FROM Exercise 
-                                                  WHERE (ExerciseLanguage LIKE '{searchLang}' AND ExerciseName LIKE '{searchName}')";
+                        cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
+                                               FROM Exercise 
+                                              WHERE (ExerciseLanguage LIKE '{searchLang}' AND ExerciseName LIKE '{searchName}')";
 
                         SqlDataReader reader = cmd.ExecuteReader();
 
@@ -104,8 +106,9 @@ namespace StudentExercisesAPI.Controllers {
                         foreach (Exercise exercise in exercises) {
 
                             cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId
-                                       FROM AssignedExercise ae JOIN Student s ON ae.StudentId = s.id
-                                       WHERE ae.ExerciseId = {exercise.Id}";
+                                                   FROM AssignedExercise ae 
+                                                   JOIN Student s ON ae.StudentId = s.id
+                                                  WHERE ae.ExerciseId = {exercise.Id}";
 
                             SqlDataReader reader = cmd.ExecuteReader();
 
@@ -138,7 +141,10 @@ namespace StudentExercisesAPI.Controllers {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = "SELECT id, ExerciseName, ExerciseLanguage FROM Exercise WHERE Id = @id";
+                    cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
+                                           FROM Exercise 
+                                          WHERE Id = @id";
+
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -171,7 +177,8 @@ namespace StudentExercisesAPI.Controllers {
                     cmd.CommandText = $@"INSERT INTO Exercise (ExerciseName, ExerciseLanguage)
                                          OUTPUT INSERTED.Id
                                          VALUES (@exerciseName, @exerciseLanguage)
-                                         SELECT MAX(Id) FROM Exercise";
+                                         SELECT MAX(Id) 
+                                           FROM Exercise";
 
                     cmd.Parameters.Add(new SqlParameter("@exerciseName", exercise.ExerciseName));
                     cmd.Parameters.Add(new SqlParameter("@exerciseLanguage", exercise.ExerciseLanguage));
@@ -197,6 +204,7 @@ namespace StudentExercisesAPI.Controllers {
                         cmd.CommandText = $@"UPDATE Exercise
                                                 SET ExerciseName = @exerciseName, ExerciseLanguage = @exerciseLanguage
                                               WHERE Id = @id";
+
                         cmd.Parameters.Add(new SqlParameter("@exerciseName", exercise.ExerciseName));
                         cmd.Parameters.Add(new SqlParameter("@exerciseLanguage", exercise.ExerciseLanguage));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
@@ -235,7 +243,9 @@ namespace StudentExercisesAPI.Controllers {
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand()) {
 
-                        cmd.CommandText = $@"DELETE FROM Exercise WHERE Id = @id";
+                        cmd.CommandText = $@"DELETE FROM Exercise 
+                                                   WHERE Id = @id";
+
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -269,7 +279,10 @@ namespace StudentExercisesAPI.Controllers {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = $@"SELECT Id, ExerciseName, ExerciseLanguage FROM Exercise WHERE Id = @id";
+                    cmd.CommandText = $@"SELECT Id, ExerciseName, ExerciseLanguage 
+                                           FROM Exercise 
+                                          WHERE Id = @id";
+
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 
                     SqlDataReader reader = cmd.ExecuteReader();

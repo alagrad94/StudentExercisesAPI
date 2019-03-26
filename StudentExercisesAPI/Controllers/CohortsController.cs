@@ -6,9 +6,9 @@ using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Http;
 using System;
-using System.Text.RegularExpressions;
 
-namespace StudentExercisesAPI.Controllers {
+namespace StudentExercisesAPI.Controllers
+{
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     [Route("api/cohorts")]
     [ApiController]
@@ -45,7 +45,10 @@ namespace StudentExercisesAPI.Controllers {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = $"SELECT id, CohortName FROM Cohort WHERE CohortName LIKE '{searchName}'";
+                    cmd.CommandText = $@"SELECT id, CohortName 
+                                           FROM Cohort 
+                                          WHERE CohortName LIKE '{searchName}'";
+
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     while (reader.Read()) {
@@ -68,9 +71,9 @@ namespace StudentExercisesAPI.Controllers {
 
                     foreach (Cohort cohort in cohorts) {
 
-                        cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId FROM Student s
+                        cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId 
+                                               FROM Student s
                                           LEFT JOIN Cohort c on s.CohortId = c.id";
-                        //cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
 
                         SqlDataReader reader = cmd.ExecuteReader();
 
@@ -97,9 +100,9 @@ namespace StudentExercisesAPI.Controllers {
 
                     foreach (Cohort cohort in cohorts) {
 
-                        cmd.CommandText = $@"SELECT i.id, i.FirstName, i.LastName, i.SlackHandle, i.CohortId FROM Instructor i
+                        cmd.CommandText = $@"SELECT i.id, i.FirstName, i.LastName, i.SlackHandle, i.CohortId 
+                                               FROM Instructor i
                                           LEFT JOIN Cohort c on i.CohortId = c.id";
-                        //cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
 
                         SqlDataReader reader = cmd.ExecuteReader();
 
@@ -127,12 +130,16 @@ namespace StudentExercisesAPI.Controllers {
         public async Task<IActionResult> Get([FromRoute] int id) {
 
             Cohort cohort = null;
+
             using (SqlConnection conn = Connection) {
 
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = "SELECT id, CohortName FROM Cohort WHERE Id = @id";
+                    cmd.CommandText = $@"SELECT id, CohortName 
+                                           FROM Cohort 
+                                          WHERE Id = @id";
+
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -146,15 +153,19 @@ namespace StudentExercisesAPI.Controllers {
                     reader.Close();
                 }
             }
+
             using (SqlConnection conn2 = Connection) {
 
                 conn2.Open();
                 using (SqlCommand cmd = conn2.CreateCommand()) {
 
 
-                    cmd.CommandText = $@"SELECT SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId FROM Student s
-                                          LEFT JOIN Cohort c on s.CohortId = c.id";
-                    //cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
+                    cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId 
+                                           FROM Student s
+                                      LEFT JOIN Cohort c on s.CohortId = c.id
+                                          WHERE s.CohortId = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -170,7 +181,6 @@ namespace StudentExercisesAPI.Controllers {
                     }
 
                     reader.Close();
-
                 }
             }
 
@@ -180,9 +190,12 @@ namespace StudentExercisesAPI.Controllers {
                 using (SqlCommand cmd = conn3.CreateCommand()) {
 
 
-                    cmd.CommandText = $@"SELECT i.id, i.FirstName, i.LastName, i.SlackHandle, i.CohortId  FROM Instructor i
-                                          LEFT JOIN Cohort c on i.CohortId = c.id";
-                    //cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
+                    cmd.CommandText = $@"SELECT i.id, i.FirstName, i.LastName, i.SlackHandle, i.CohortId 
+                                           FROM Instructor i
+                                      LEFT JOIN Cohort c on i.CohortId = c.id
+                                          WHERE i.CohortId = @id";
+
+                    cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -220,9 +233,11 @@ namespace StudentExercisesAPI.Controllers {
                     using (SqlCommand cmd = conn.CreateCommand()) {
 
                         cmd.CommandText = $@"INSERT INTO Cohort (CohortName)
-                                         OUTPUT INSERTED.Id
-                                         VALUES (@cohortName) 
-                                         SELECT MAX(Id) FROM Cohort";
+                                                  OUTPUT INSERTED.Id
+                                                  VALUES (@cohortName) 
+                                                  SELECT MAX(Id) 
+                                                    FROM Cohort";
+
                         cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
 
                         int newId = (int)cmd.ExecuteScalar();
@@ -253,6 +268,7 @@ namespace StudentExercisesAPI.Controllers {
                         cmd.CommandText = @"UPDATE Coffee
                                                SET CohortName = @cohortName,
                                              WHERE Id = @id";
+
                         cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
@@ -289,7 +305,9 @@ namespace StudentExercisesAPI.Controllers {
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand()) {
 
-                        cmd.CommandText = $@"DELETE FROM Cohort WHERE Id = @id";
+                        cmd.CommandText = $@"DELETE FROM Cohort 
+                                              WHERE Id = @id";
+
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -323,7 +341,10 @@ namespace StudentExercisesAPI.Controllers {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand()) {
 
-                    cmd.CommandText = $@"SELECT Id, CohortName FROM Cohort WHERE Id = @id";
+                    cmd.CommandText = $@"SELECT Id, CohortName 
+                                           FROM Cohort 
+                                          WHERE Id = @id";
+
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 
                     SqlDataReader reader = cmd.ExecuteReader();
