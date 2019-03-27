@@ -111,14 +111,6 @@ namespace StudentExercisesAPI.Controllers {
                         }
 
                         reader.Close();
-                    }
-                }
-
-                using (SqlConnection conn2 = Connection) {
-
-                    conn2.Open();
-
-                    using (SqlCommand cmd = conn2.CreateCommand()) {
 
                         foreach (Student student in students) {
 
@@ -127,20 +119,18 @@ namespace StudentExercisesAPI.Controllers {
                                                    JOIN Exercise e ON ae.ExerciseId = e.id
                                                   WHERE ae.StudentId = {student.Id}";
 
-                            SqlDataReader reader = cmd.ExecuteReader();
+                            SqlDataReader reader2 = cmd.ExecuteReader();
 
-                            while (reader.Read()) {
+                            while (reader2.Read()) {
 
-                                Exercise exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
-                                    reader.GetString(reader.GetOrdinal("ExerciseName")),
-                                    reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
+                                Exercise exercise = new Exercise(reader2.GetInt32(reader2.GetOrdinal("id")),
+                                    reader2.GetString(reader2.GetOrdinal("ExerciseName")),
+                                    reader2.GetString(reader2.GetOrdinal("ExerciseLanguage")));
 
                                 student.AssignedExercises.Add(exercise);
                             }
-
-                            reader.Close();
+                            reader2.Close();
                         }
-
                         return Ok(students);
                     }
                 }
@@ -198,7 +188,7 @@ namespace StudentExercisesAPI.Controllers {
                                                     c.CohortName, c.id AS chrtId
                                                FROM Student s 
                                                JOIN Cohort c ON s.CohortId = c.id
-                                               WHERE s.Id = @id";
+                                              WHERE s.Id = @id";
 
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
@@ -217,31 +207,23 @@ namespace StudentExercisesAPI.Controllers {
                                    reader.GetString(reader.GetOrdinal("CohortName")))};
                         }
                         reader.Close();
-                    }
-                }
-                using (SqlConnection conn2 = Connection) {
-
-                    conn2.Open();
-
-                    using (SqlCommand cmd = conn2.CreateCommand()) {
 
                         cmd.CommandText = $@"SELECT e.id, e.ExerciseName, e.ExerciseLanguage
                                                FROM AssignedExercise ae 
                                                JOIN Exercise e ON ae.ExerciseId = e.id
                                               WHERE ae.StudentId = {student.Id}";
 
-                        SqlDataReader reader = cmd.ExecuteReader();
+                        SqlDataReader reader2 = cmd.ExecuteReader();
 
-                        while (reader.Read()) {
+                        while (reader2.Read()) {
 
-                            Exercise exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
-                                reader.GetString(reader.GetOrdinal("ExerciseName")),
-                                reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
+                            Exercise exercise = new Exercise(reader2.GetInt32(reader2.GetOrdinal("id")),
+                                reader2.GetString(reader2.GetOrdinal("ExerciseName")),
+                                reader2.GetString(reader2.GetOrdinal("ExerciseLanguage")));
 
                             student.AssignedExercises.Add(exercise);
                         }
-
-                        reader.Close();
+                        reader2.Close();
                         return Ok(student);
                     }
                 }

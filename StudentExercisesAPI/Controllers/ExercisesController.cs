@@ -40,12 +40,10 @@ namespace StudentExercisesAPI.Controllers {
 
             if (include != "students") {
 
-                using (SqlConnection conn = Connection)
-                {
+                using (SqlConnection conn = Connection) {
 
                     conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
-                    {
+                    using (SqlCommand cmd = conn.CreateCommand()) {
 
                         cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
                                                FROM Exercise 
@@ -55,8 +53,7 @@ namespace StudentExercisesAPI.Controllers {
 
                         List<Exercise> exercises = new List<Exercise>();
 
-                        while (reader.Read())
-                        {
+                        while (reader.Read()) {
 
                             Exercise exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
                                 reader.GetString(reader.GetOrdinal("ExerciseName")),
@@ -96,13 +93,6 @@ namespace StudentExercisesAPI.Controllers {
                         }
 
                         reader.Close();
-                    }
-                }
-                using (SqlConnection conn2 = Connection) {
-
-                    conn2.Open();
-
-                    using (SqlCommand cmd = conn2.CreateCommand()) {
 
                         foreach (Exercise exercise in exercises) {
 
@@ -111,20 +101,20 @@ namespace StudentExercisesAPI.Controllers {
                                                    JOIN Student s ON ae.StudentId = s.id
                                                   WHERE ae.ExerciseId = {exercise.Id}";
 
-                            SqlDataReader reader = cmd.ExecuteReader();
+                            SqlDataReader reader2 = cmd.ExecuteReader();
 
-                            while (reader.Read()) {
+                            while (reader2.Read()) {
 
-                                Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
-                                 reader.GetString(reader.GetOrdinal("FirstName")),
-                                 reader.GetString(reader.GetOrdinal("LastName")),
-                                 reader.GetString(reader.GetOrdinal("SlackHandle")),
-                                 reader.GetInt32(reader.GetOrdinal("CohortId")));
+                                Student student = new Student(reader2.GetInt32(reader2.GetOrdinal("id")),
+                                 reader2.GetString(reader2.GetOrdinal("FirstName")),
+                                 reader2.GetString(reader2.GetOrdinal("LastName")),
+                                 reader2.GetString(reader2.GetOrdinal("SlackHandle")),
+                                 reader2.GetInt32(reader2.GetOrdinal("CohortId")));
 
                                 exercise.ExerciseStudents.Add(student);
                             }
 
-                            reader.Close();
+                            reader2.Close();
                         }
 
                         return Ok(exercises);
@@ -135,32 +125,83 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/exercises/5
         [HttpGet("{id}", Name = "GetExercise")]
-        public async Task<IActionResult> Get([FromRoute] int id) {
+        public async Task<IActionResult> Get([FromRoute] int id, string include = "") {
 
-            using (SqlConnection conn = Connection) {
+            if (include != "students") {
 
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand()) {
+                using (SqlConnection conn = Connection) {
 
-                    cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
                                            FROM Exercise 
                                           WHERE Id = @id";
 
-                    cmd.Parameters.Add(new SqlParameter("@id", id));
-                    SqlDataReader reader = cmd.ExecuteReader();
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        SqlDataReader reader = cmd.ExecuteReader();
 
-                    Exercise exercise = null;
+                        Exercise exercise = null;
 
-                    while (reader.Read()) {
+                        while (reader.Read()) {
 
-                        exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
-                            reader.GetString(reader.GetOrdinal("ExerciseName")),
-                            reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
+                            exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
+                                reader.GetString(reader.GetOrdinal("ExerciseName")),
+                                reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
+                        }
+
+                        reader.Close();
+                        return Ok(exercise);
                     }
+                }
+            } else {
 
-                    reader.Close();
+                Exercise exercise = null;
 
-                    return Ok(exercise);
+                using (SqlConnection conn = Connection) {
+
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand()) {
+
+                        cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
+                                               FROM Exercise 
+                                              WHERE Id = @id";
+
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        SqlDataReader reader = cmd.ExecuteReader();
+
+
+                        while (reader.Read()) {
+
+                            exercise = new Exercise(reader.GetInt32(reader.GetOrdinal("id")),
+                                reader.GetString(reader.GetOrdinal("ExerciseName")),
+                                reader.GetString(reader.GetOrdinal("ExerciseLanguage")));
+                        }
+
+                        reader.Close();
+
+                        cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId
+                                               FROM AssignedExercise ae 
+                                               JOIN Student s ON ae.StudentId = s.id
+                                              WHERE ae.ExerciseId = {exercise.Id}";
+
+                        SqlDataReader reader2 = cmd.ExecuteReader();
+
+                        while (reader2.Read()) {
+
+                            Student student = new Student(reader2.GetInt32(reader2.GetOrdinal("id")),
+                             reader2.GetString(reader2.GetOrdinal("FirstName")),
+                             reader2.GetString(reader2.GetOrdinal("LastName")),
+                             reader2.GetString(reader2.GetOrdinal("SlackHandle")),
+                             reader2.GetInt32(reader2.GetOrdinal("CohortId")));
+
+                            exercise.ExerciseStudents.Add(student);
+                        }
+
+                        reader2.Close();
+                        return Ok(exercise);
+                    }
                 }
             }
         }

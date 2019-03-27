@@ -36,6 +36,12 @@ namespace StudentExercisesAPI.Models {
         [StringLength(25, MinimumLength = 2)]
         public string LastName { get; set; }
 
+        public string FullName {
+            get {
+                return $"{FirstName} {LastName}";
+            }
+        }
+
         [Required]
         [StringLength(12, MinimumLength = 3)]
         public string SlackHandle { get; set; }
@@ -44,6 +50,7 @@ namespace StudentExercisesAPI.Models {
         public int CohortId { get; set; }
 
         public Cohort Cohort { get; set; }
+
         public List<Exercise> AssignedExercises { get; set; }
 
     }

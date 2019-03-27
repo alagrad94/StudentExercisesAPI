@@ -61,67 +61,53 @@ namespace StudentExercisesAPI.Controllers {
 
                     reader.Close();
 
-                }
-            }
-
-            using (SqlConnection conn2 = Connection) {
-
-                conn2.Open();
-                using (SqlCommand cmd = conn2.CreateCommand()) {
-
                     foreach (Cohort cohort in cohorts) {
 
                         cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId 
                                                FROM Student s
-                                          LEFT JOIN Cohort c on s.CohortId = c.id";
+                                          LEFT JOIN Cohort c on s.CohortId = c.id
+                                              WHERE c.id = {cohort.Id}";
 
-                        SqlDataReader reader = cmd.ExecuteReader();
+                        SqlDataReader reader2 = cmd.ExecuteReader();
 
-                        while (reader.Read()) {
+                        while (reader2.Read()) {
 
-                            Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
-                                 reader.GetString(reader.GetOrdinal("FirstName")),
-                                 reader.GetString(reader.GetOrdinal("LastName")),
-                                 reader.GetString(reader.GetOrdinal("SlackHandle")),
-                                 reader.GetInt32(reader.GetOrdinal("CohortId")));
+                            Student student = new Student(reader2.GetInt32(reader2.GetOrdinal("id")),
+                                 reader2.GetString(reader2.GetOrdinal("FirstName")),
+                                 reader2.GetString(reader2.GetOrdinal("LastName")),
+                                 reader2.GetString(reader2.GetOrdinal("SlackHandle")),
+                                 reader2.GetInt32(reader2.GetOrdinal("CohortId")));
 
                             cohort.StudentList.Add(student);
                         }
 
-                        reader.Close();
+                        reader2.Close();
                     }
-                }
-            }
-
-            using (SqlConnection conn3 = Connection) {
-
-                conn3.Open();
-                using (SqlCommand cmd = conn3.CreateCommand()) {
 
                     foreach (Cohort cohort in cohorts) {
 
                         cmd.CommandText = $@"SELECT i.id, i.FirstName, i.LastName, i.SlackHandle, i.CohortId 
                                                FROM Instructor i
-                                          LEFT JOIN Cohort c on i.CohortId = c.id";
+                                          LEFT JOIN Cohort c on i.CohortId = c.id
+                                              WHERE c.id = {cohort.Id}";
 
-                        SqlDataReader reader = cmd.ExecuteReader();
+                        SqlDataReader reader3 = cmd.ExecuteReader();
 
-                        while (reader.Read()) {
+                        while (reader3.Read()) {
 
-                            Instructor instructor = new Instructor(reader.GetInt32(reader.GetOrdinal("id")),
-                             reader.GetString(reader.GetOrdinal("FirstName")),
-                             reader.GetString(reader.GetOrdinal("LastName")),
-                             reader.GetString(reader.GetOrdinal("SlackHandle")),
-                             reader.GetInt32(reader.GetOrdinal("CohortId")));
+                            Instructor instructor = new Instructor(reader3.GetInt32(reader3.GetOrdinal("id")),
+                             reader3.GetString(reader3.GetOrdinal("FirstName")),
+                             reader3.GetString(reader3.GetOrdinal("LastName")),
+                             reader3.GetString(reader3.GetOrdinal("SlackHandle")),
+                             reader3.GetInt32(reader3.GetOrdinal("CohortId")));
 
                             cohort.InstructorList.Add(instructor);
                         }
 
-                        reader.Close();
+                        reader3.Close();
                     }
-
-                    return Ok(cohorts);
                 }
+                return Ok(cohorts);
             }
         }
 
@@ -151,67 +137,46 @@ namespace StudentExercisesAPI.Controllers {
                     }
 
                     reader.Close();
-                }
-            }
-
-            using (SqlConnection conn2 = Connection) {
-
-                conn2.Open();
-                using (SqlCommand cmd = conn2.CreateCommand()) {
-
 
                     cmd.CommandText = $@"SELECT s.id, s.FirstName, s.LastName, s.SlackHandle, s.CohortId 
                                            FROM Student s
                                       LEFT JOIN Cohort c on s.CohortId = c.id
-                                          WHERE s.CohortId = @id";
+                                          WHERE c.id = {cohort.Id}";
 
-                    cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
+                    SqlDataReader reader2 = cmd.ExecuteReader();
 
-                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader2.Read()) {
 
-                    while (reader.Read()) {
-
-                        Student student = new Student(reader.GetInt32(reader.GetOrdinal("id")),
-                             reader.GetString(reader.GetOrdinal("FirstName")),
-                             reader.GetString(reader.GetOrdinal("LastName")),
-                             reader.GetString(reader.GetOrdinal("SlackHandle")),
-                             reader.GetInt32(reader.GetOrdinal("CohortId")));
+                        Student student = new Student(reader2.GetInt32(reader2.GetOrdinal("id")),
+                             reader2.GetString(reader2.GetOrdinal("FirstName")),
+                             reader2.GetString(reader2.GetOrdinal("LastName")),
+                             reader2.GetString(reader2.GetOrdinal("SlackHandle")),
+                             reader2.GetInt32(reader2.GetOrdinal("CohortId")));
 
                         cohort.StudentList.Add(student);
                     }
 
-                    reader.Close();
-                }
-            }
-
-            using (SqlConnection conn3 = Connection) {
-
-                conn3.Open();
-                using (SqlCommand cmd = conn3.CreateCommand()) {
-
+                    reader2.Close();
 
                     cmd.CommandText = $@"SELECT i.id, i.FirstName, i.LastName, i.SlackHandle, i.CohortId 
                                            FROM Instructor i
                                       LEFT JOIN Cohort c on i.CohortId = c.id
-                                          WHERE i.CohortId = @id";
+                                          WHERE c.id = {cohort.Id}";
 
-                    cmd.Parameters.Add(new SqlParameter("@id", cohort.Id));
+                    SqlDataReader reader3 = cmd.ExecuteReader();
 
-                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader3.Read()) {
 
-                    while (reader.Read()) {
-
-                        Instructor instructor = new Instructor(reader.GetInt32(reader.GetOrdinal("id")),
-                         reader.GetString(reader.GetOrdinal("FirstName")),
-                         reader.GetString(reader.GetOrdinal("LastName")),
-                         reader.GetString(reader.GetOrdinal("SlackHandle")),
-                         reader.GetInt32(reader.GetOrdinal("CohortId")));
+                        Instructor instructor = new Instructor(reader3.GetInt32(reader3.GetOrdinal("id")),
+                         reader3.GetString(reader3.GetOrdinal("FirstName")),
+                         reader3.GetString(reader3.GetOrdinal("LastName")),
+                         reader3.GetString(reader3.GetOrdinal("SlackHandle")),
+                         reader3.GetInt32(reader3.GetOrdinal("CohortId")));
 
                         cohort.InstructorList.Add(instructor);
                     }
 
-                    reader.Close();
-
+                    reader3.Close();
                     return Ok(cohort);
                 }
             }
