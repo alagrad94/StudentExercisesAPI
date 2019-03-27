@@ -33,7 +33,7 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/exercises
         [HttpGet]
-        public async Task<IActionResult> Get(string name= "", string language= "", string include = "") {
+        public async Task<IActionResult> Get(string q, string name= "", string language= "", string include = "") {
 
             string searchName = (name == "") ? "%" : name;
             string searchLang = (language == "") ? "%" : language;
@@ -47,7 +47,12 @@ namespace StudentExercisesAPI.Controllers {
 
                         cmd.CommandText = $@"SELECT id, ExerciseName, ExerciseLanguage 
                                                FROM Exercise 
-                                              WHERE (ExerciseLanguage LIKE '{searchLang}' AND ExerciseName LIKE '{searchName}')";
+                                              WHERE ExerciseLanguage LIKE '{searchLang}' AND ExerciseName LIKE '{searchName}'";
+
+                        if (!string.IsNullOrWhiteSpace(q)) {
+                            cmd.CommandText += @" AND (ExerciseName LIKE @q OR ExerciseLanguage LIKE @q)";
+                            cmd.Parameters.Add(new SqlParameter("@q", $"%{q}%"));
+                        }
 
                         SqlDataReader reader = cmd.ExecuteReader();
 

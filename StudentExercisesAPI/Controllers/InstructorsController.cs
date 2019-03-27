@@ -32,7 +32,7 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/instructors
         [HttpGet]
-        public async Task<IActionResult> Get(string firstName = "", string lastName = "", string slackHandle = "") {
+        public async Task<IActionResult> Get(string q, string firstName = "", string lastName = "", string slackHandle = "") {
 
             string searchFN = (firstName == "") ? "%" : firstName;
             string searchLN = (lastName == "") ? "%" : lastName;
@@ -49,8 +49,13 @@ namespace StudentExercisesAPI.Controllers {
                                                 c.CohortName, c.id AS chrtId
                                            FROM Instructor i 
                                            JOIN Cohort c ON i.CohortId = c.id
-                                          WHERE (i.FirstName LIKE '{searchFN}' AND i.LastName LIKE '{searchLN}' 
-                                                AND i.SlackHandle LIKE '{searchSH}')";
+                                          WHERE i.FirstName LIKE '{searchFN}' AND i.LastName LIKE '{searchLN}' 
+                                                AND i.SlackHandle LIKE '{searchSH}'";
+
+                    if (!string.IsNullOrWhiteSpace(q)) {
+                        cmd.CommandText += @" AND (i.FirstName LIKE @q OR i.LastName LIKE @q OR i.SlackHandle LIKE @q)";
+                        cmd.Parameters.Add(new SqlParameter("@q", $"%{q}%"));
+                    }
 
                     SqlDataReader reader = cmd.ExecuteReader();
 

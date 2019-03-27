@@ -32,7 +32,7 @@ namespace StudentExercisesAPI.Controllers {
 
         // GET api/students
         [HttpGet]
-        public async Task<IActionResult> Get(string firstName = "", string lastName = "", string slackHandle = "", string include = "") {
+        public async Task<IActionResult> Get(string q, string firstName = "", string lastName = "", string slackHandle = "", string include = "") {
 
             string searchFN = (firstName == "") ? "%" : firstName;
             string searchLN = (lastName == "") ? "%" : lastName;
@@ -51,8 +51,13 @@ namespace StudentExercisesAPI.Controllers {
                                                     c.CohortName, c.id AS chrtId 
                                                FROM Student s 
                                                JOIN Cohort c ON s.CohortId = c.id
-                                              WHERE (s.FirstName LIKE '{searchFN}' AND s.LastName LIKE '{searchLN}' 
-                                                     AND s.SlackHandle LIKE '{searchSH}')";
+                                              WHERE s.FirstName LIKE '{searchFN}' AND s.LastName LIKE '{searchLN}' 
+                                                     AND s.SlackHandle LIKE '{searchSH}'";
+
+                        if (!string.IsNullOrWhiteSpace(q)) {
+                            cmd.CommandText += @" AND (s.FirstName LIKE @q OR s.LastName LIKE @q OR s.SlackHandle LIKE @q)";
+                            cmd.Parameters.Add(new SqlParameter("@q", $"%{q}%"));
+                        }
 
                         SqlDataReader reader = cmd.ExecuteReader();
 
@@ -141,9 +146,10 @@ namespace StudentExercisesAPI.Controllers {
         [HttpGet("{id}", Name = "GetStudent")]
         public async Task<IActionResult> Get([FromRoute] int id, string include = "") {
 
-            Student student = null;
 
             if (include != "exercises") {
+
+                Student student = null;
 
                 using (SqlConnection conn = Connection) {
 
@@ -178,6 +184,8 @@ namespace StudentExercisesAPI.Controllers {
                 }
 
             } else {
+
+                Student student = null;
 
                 using (SqlConnection conn = Connection) {
 
