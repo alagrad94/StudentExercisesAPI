@@ -87,7 +87,7 @@ namespace StudentExercisesAPI.Tests {
                 getCohortToUpdate.EnsureSuccessStatusCode();
 
                 string getCohortToUpdateBody = await getCohortToUpdate.Content.ReadAsStringAsync();
-                var cohortToUpdate = JsonConvert.DeserializeObject <List<Cohort >> (getCohortToUpdateBody);
+                var cohortToUpdate = JsonConvert.DeserializeObject <List<Cohort>> (getCohortToUpdateBody);
 
                 int cohortToUpdateId = cohortToUpdate[0].Id;
 
