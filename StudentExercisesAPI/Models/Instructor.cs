@@ -6,6 +6,14 @@ namespace StudentExercisesAPI.Models {
 
     public class Instructor {
 
+        public Instructor() {
+
+            FirstName = null;
+            LastName = null;
+            SlackHandle = null;
+            CohortId = 0;
+        }
+
         public Instructor (int id, string firstName, string lastName, string slackHandle, int cohortId) {
       
           Id = id;

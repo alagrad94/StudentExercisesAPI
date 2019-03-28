@@ -18,9 +18,7 @@ namespace StudentExercisesAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //string connectionString = "Server=10.37.129.4\\\\SQLEXPRESS;Database=StudentExercises;User Id = russ;Password = russ;";
-            //services.AddDbContext<StudentExercisesContext>(opt =>
-            //opt.UseSqlServer(connectionString));
+
             services.AddCors(options => {
 
                 options.AddPolicy("AllowAllHeaders",

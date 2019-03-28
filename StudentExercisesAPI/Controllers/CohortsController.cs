@@ -133,8 +133,8 @@ namespace StudentExercisesAPI.Controllers {
                                                 i.id AS InstructorId, i.FirstName AS InstructorFirstName, i.LastName AS InstructorLastName, 
                                                 i.SlackHandle AS InstructorSlackHandle
                                            FROM Cohort c
-                                     INNER JOIN Student s ON c.id = s.CohortId
-                                     INNER JOIN Instructor i ON c.id = i.CohortId
+                                     LEFT JOIN Student s ON c.id = s.CohortId
+                                     LEFT JOIN Instructor i ON c.id = i.CohortId
                                           WHERE c.Id = @id";
 
                     cmd.Parameters.Add(new SqlParameter("@id", id));
@@ -151,31 +151,36 @@ namespace StudentExercisesAPI.Controllers {
                                 reader.GetString(reader.GetOrdinal("CohortName")));
                         }
 
-                        int studentId = reader.GetInt32(reader.GetOrdinal("StudentId"));
+                        if (!reader.IsDBNull(reader.GetOrdinal("StudentId"))) {
+                            int studentId = reader.GetInt32(reader.GetOrdinal("StudentId"));
 
-                        if (!cohort.StudentList.Any(s => s.Id == studentId)) {
+                            if (!cohort.StudentList.Any(s => s.Id == studentId)) {
 
-                            Student student = new Student(studentId,
-                                reader.GetString(reader.GetOrdinal("StudentFirstName")),
-                                reader.GetString(reader.GetOrdinal("StudentLastName")),
-                                reader.GetString(reader.GetOrdinal("StudentSlackHandle")),
-                                reader.GetInt32(reader.GetOrdinal("CohortId")));
+                                Student student = new Student(studentId,
+                                    reader.GetString(reader.GetOrdinal("StudentFirstName")),
+                                    reader.GetString(reader.GetOrdinal("StudentLastName")),
+                                    reader.GetString(reader.GetOrdinal("StudentSlackHandle")),
+                                    reader.GetInt32(reader.GetOrdinal("CohortId")));
 
-                            cohort.StudentList.Add(student);
+                                cohort.StudentList.Add(student);
 
+                            }
                         }
 
-                        int instructorId = reader.GetInt32(reader.GetOrdinal("InstructorId"));
+                        if (!reader.IsDBNull(reader.GetOrdinal("InstructorId"))) {
 
-                        if (!cohort.InstructorList.Any(i => i.Id == instructorId)) {
+                            int instructorId = reader.GetInt32(reader.GetOrdinal("InstructorId"));
 
-                            Instructor instructor = new Instructor(instructorId,
-                                reader.GetString(reader.GetOrdinal("InstructorFirstName")),
-                                reader.GetString(reader.GetOrdinal("InstructorLastName")),
-                                reader.GetString(reader.GetOrdinal("InstructorSlackHandle")),
-                                reader.GetInt32(reader.GetOrdinal("CohortId")));
+                            if (!cohort.InstructorList.Any(i => i.Id == instructorId)) {
 
-                            cohort.InstructorList.Add(instructor);
+                                Instructor instructor = new Instructor(instructorId,
+                                    reader.GetString(reader.GetOrdinal("InstructorFirstName")),
+                                    reader.GetString(reader.GetOrdinal("InstructorLastName")),
+                                    reader.GetString(reader.GetOrdinal("InstructorSlackHandle")),
+                                    reader.GetInt32(reader.GetOrdinal("CohortId")));
+
+                                cohort.InstructorList.Add(instructor);
+                            }
 
                         }
                     }
@@ -234,8 +239,8 @@ namespace StudentExercisesAPI.Controllers {
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand()) {
 
-                        cmd.CommandText = @"UPDATE Coffee
-                                               SET CohortName = @cohortName,
+                        cmd.CommandText = @"UPDATE Cohort
+                                               SET CohortName = @cohortName
                                              WHERE Id = @id";
 
                         cmd.Parameters.Add(new SqlParameter("@cohortName", cohort.CohortName));
