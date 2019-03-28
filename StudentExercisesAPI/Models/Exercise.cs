@@ -6,12 +6,18 @@ namespace StudentExercisesAPI.Models {
 
   public class Exercise {
 
+    public Exercise() {
+
+        ExerciseName = null;
+        ExerciseLanguage = null;
+    }
+
     public Exercise (int id, string exerciseName, string exerciseLanguage) {
 
-        Id = id;
-        ExerciseName = exerciseName;
-        ExerciseLanguage = exerciseLanguage;
-        ExerciseStudents = new List<Student>();
+    Id = id;
+    ExerciseName = exerciseName;
+    ExerciseLanguage = exerciseLanguage;
+    ExerciseStudents = new List<Student>();
 
     }
 
